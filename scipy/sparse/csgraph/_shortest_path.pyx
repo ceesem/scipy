@@ -429,11 +429,11 @@ def dijkstra(csgraph, directed=True, indices=None,
         that are separated by a distance > limit. For such pairs, the distance
         will be equal to np.inf (i.e., not connected).
     multi_target: bool, optional
-        if False (default), independently find the shortest path to every index
-        in indices.  If True, find the shortest path to any index in indices,
-        resulting distance matrix with be Kx1 vector, where K is the len(indices)
-        and predecessor matrix will be Nx1. Much faster if this is what you want.
-        .. versionadded:: 0.15.0
+        If False (default), independently find the shortest path to every index
+        in indices.  If True, find the shortest path to any index in indices and
+        the resulting distance matrix with be Kx1 vector, where K is the len(indices)
+        and the predecessor matrix will be Nx1. 
+        .. versionadded:: 1.3.0
 
     Returns
     -------
