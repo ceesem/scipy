@@ -429,9 +429,8 @@ def dijkstra(csgraph, directed=True, indices=None,
         that are separated by a distance > limit. For such pairs, the distance
         will be equal to np.inf (i.e., not connected).
     multi_target: bool, optional
-        if False (default), independantly find the shortest path
-        to every index in indices
-        If True, find the shortest path to any index in indices,
+        if False (default), independently find the shortest path to every index
+        in indices.  If True, find the shortest path to any index in indices,
         resulting distance matrix with be Kx1 vector, where K is the len(indices)
         and predecessor matrix will be Nx1. Much faster if this is what you want.
         .. versionadded:: 0.15.0
@@ -593,19 +592,17 @@ cdef _dijkstra_directed(
             np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
             np.ndarray[ITYPE_t, ndim=2, mode='c'] pred,
             DTYPE_t limit):
-    cdef unsigned int Nind = dist_matrix.shape[0]
-    cdef unsigned int N = dist_matrix.shape[1]
-    cdef unsigned int i, k, j_source, j_current
-    cdef ITYPE_t j
-
-    cdef DTYPE_t next_val
-
-    cdef int return_pred = (pred.size > 0)
-
-    cdef FibonacciHeap heap
-    cdef FibonacciNode *v
-    cdef FibonacciNode *current_node
-    cdef FibonacciNode* nodes = <FibonacciNode*> malloc(N *
+    cdef:
+        unsigned int Nind = dist_matrix.shape[0]
+        unsigned int N = dist_matrix.shape[1]
+        unsigned int i, k, j_source, j_current
+        ITYPE_t j
+        DTYPE_t next_val
+        int return_pred = (pred.size > 0)
+        FibonacciHeap heap
+        FibonacciNode *v
+        FibonacciNode *current_node
+        FibonacciNode* nodes = <FibonacciNode*> malloc(N *
                                                         sizeof(FibonacciNode))
 
     for i in range(Nind):
@@ -653,20 +650,20 @@ cdef _dijkstra_directed_multi(
             np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_matrix,
             np.ndarray[ITYPE_t, ndim=1, mode='c'] pred,
             DTYPE_t limit):
-    cdef unsigned int Nind = source_indices.shape[0]
-    cdef unsigned int N = dist_matrix.shape[0]
-    cdef unsigned int i, k, j_source, j_current
-    cdef ITYPE_t j
+    cdef:
+        unsigned int Nind = source_indices.shape[0]
+        unsigned int N = dist_matrix.shape[0]
+        unsigned int i, k, j_source, j_current
+        ITYPE_t j
 
-    cdef DTYPE_t next_val
+        DTYPE_t next_val
 
-    cdef int return_pred = (pred.size > 0)
+        int return_pred = (pred.size > 0)
 
-    cdef FibonacciHeap heap
-    cdef FibonacciNode *v
-    cdef FibonacciNode *current_node
-    cdef FibonacciNode* nodes = <FibonacciNode*> malloc(N *
-                                                        sizeof(FibonacciNode))
+        FibonacciHeap heap
+        FibonacciNode *v
+        FibonacciNode *current_node
+        FibonacciNode* nodes = <FibonacciNode*> malloc(N * sizeof(FibonacciNode))
     for k in range(N):
         initialize_node(&nodes[k], k)
 
@@ -721,19 +718,17 @@ cdef _dijkstra_undirected(
             np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
             np.ndarray[ITYPE_t, ndim=2, mode='c'] pred,
             DTYPE_t limit):
-    cdef unsigned int Nind = dist_matrix.shape[0]
-    cdef unsigned int N = dist_matrix.shape[1]
-    cdef unsigned int i, k, j_source, j_current
-    cdef ITYPE_t j
-
-    cdef DTYPE_t next_val
-
-    cdef int return_pred = (pred.size > 0)
-
-    cdef FibonacciHeap heap
-    cdef FibonacciNode *v
-    cdef FibonacciNode *current_node
-    cdef FibonacciNode* nodes = <FibonacciNode*> malloc(N *
+    cdef:
+        unsigned int Nind = dist_matrix.shape[0]
+        unsigned int N = dist_matrix.shape[1]
+        unsigned int i, k, j_source, j_current
+        ITYPE_t j
+        DTYPE_t next_val
+        int return_pred = (pred.size > 0)
+        FibonacciHeap heap
+        FibonacciNode *v
+        FibonacciNode *current_node
+        FibonacciNode* nodes = <FibonacciNode*> malloc(N *
                                                         sizeof(FibonacciNode))
 
     for i in range(Nind):
@@ -802,19 +797,17 @@ cdef _dijkstra_undirected_multi(
             np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_matrix,
             np.ndarray[ITYPE_t, ndim=1, mode='c'] pred,
             DTYPE_t limit):
-    cdef unsigned int Nind = source_indices.shape[0]
-    cdef unsigned int N = dist_matrix.shape[0]
-    cdef unsigned int i, k, j_source, j_current
-    cdef ITYPE_t j
-
-    cdef DTYPE_t next_val
-
-    cdef int return_pred = (pred.size > 0)
-
-    cdef FibonacciHeap heap
-    cdef FibonacciNode *v
-    cdef FibonacciNode *current_node
-    cdef FibonacciNode* nodes = <FibonacciNode*> malloc(N *
+    cdef:
+        unsigned int Nind = source_indices.shape[0]
+        unsigned int N = dist_matrix.shape[0]
+        unsigned int i, k, j_source, j_current
+        ITYPE_t j
+        DTYPE_t next_val
+        int return_pred = (pred.size > 0)
+        FibonacciHeap heap
+        FibonacciNode *v
+        FibonacciNode *current_node
+        FibonacciNode* nodes = <FibonacciNode*> malloc(N *
                                                         sizeof(FibonacciNode))
     for k in range(N):
         initialize_node(&nodes[k], k)
@@ -1024,13 +1017,12 @@ cdef int _bellman_ford_directed(
             np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
             np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
             np.ndarray[ITYPE_t, ndim=2, mode='c'] pred):
-    cdef unsigned int Nind = dist_matrix.shape[0]
-    cdef unsigned int N = dist_matrix.shape[1]
-    cdef unsigned int i, j, k, j_source, count
-
-    cdef DTYPE_t d1, d2, w12
-
-    cdef int return_pred = (pred.size > 0)
+    cdef:
+        unsigned int Nind = dist_matrix.shape[0]
+        unsigned int N = dist_matrix.shape[1]
+        unsigned int i, j, k, j_source, count
+        DTYPE_t d1, d2, w12
+        int return_pred = (pred.size > 0)
 
     for i in range(Nind):
         j_source = source_indices[i]
@@ -1066,13 +1058,12 @@ cdef int _bellman_ford_undirected(
             np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
             np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
             np.ndarray[ITYPE_t, ndim=2, mode='c'] pred):
-    cdef unsigned int Nind = dist_matrix.shape[0]
-    cdef unsigned int N = dist_matrix.shape[1]
-    cdef unsigned int i, j, k, j_source, ind_k, count
-
-    cdef DTYPE_t d1, d2, w12
-
-    cdef int return_pred = (pred.size > 0)
+    cdef:
+        unsigned int Nind = dist_matrix.shape[0]
+        unsigned int N = dist_matrix.shape[1]
+        unsigned int i, j, k, j_source, ind_k, count
+        DTYPE_t d1, d2, w12
+        int return_pred = (pred.size > 0)
 
     for i in range(Nind):
         j_source = source_indices[i]
@@ -1303,10 +1294,10 @@ cdef int _johnson_directed(
             np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
             np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
             np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_array):
-    cdef unsigned int N = dist_array.shape[0]
-    cdef unsigned int j, k, j_source, count
-
-    cdef DTYPE_t d1, d2, w12
+    cdef:
+        unsigned int N = dist_array.shape[0]
+        unsigned int j, k, j_source, count
+        DTYPE_t d1, d2, w12
 
     # relax all edges (N+1) - 1 times
     for count in range(N):
@@ -1339,10 +1330,10 @@ cdef int _johnson_undirected(
             np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
             np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
             np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_array):
-    cdef unsigned int N = dist_array.shape[0]
-    cdef unsigned int j, k, j_source, count
-
-    cdef DTYPE_t d1, d2, w12
+    cdef:
+        unsigned int N = dist_array.shape[0]
+        unsigned int j, k, j_source, count
+        DTYPE_t d1, d2, w12
 
     # relax all edges (N+1) - 1 times
     for count in range(N):
@@ -1547,10 +1538,11 @@ cdef void link(FibonacciHeap* heap, FibonacciNode* node):
 cdef FibonacciNode* remove_min(FibonacciHeap* heap):
     # Assumptions: - heap is a valid pointer
     #              - heap.min_node is a valid pointer
-    cdef FibonacciNode *temp
-    cdef FibonacciNode *temp_right
-    cdef FibonacciNode *out
-    cdef unsigned int i
+    cdef:
+        FibonacciNode *temp
+        FibonacciNode *temp_right
+        FibonacciNode *out
+        unsigned int i
 
     # make all min_node children into root nodes
     if heap.min_node.children:
