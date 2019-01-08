@@ -643,12 +643,12 @@ cdef _dijkstra_directed(
     free(nodes)
 
 cdef _dijkstra_directed_multi(
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_matrix,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] pred,
+            int[:] source_indices,
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:] dist_matrix,
+            int[:] pred,
             DTYPE_t limit):
     cdef:
         unsigned int Nind = source_indices.shape[0]
@@ -708,15 +708,15 @@ cdef _dijkstra_directed_multi(
     free(nodes)
 
 cdef _dijkstra_undirected(
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csrT_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csrT_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csrT_indptr,
-            np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
-            np.ndarray[ITYPE_t, ndim=2, mode='c'] pred,
+            int[:] source_indices,
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:] csrT_weights,
+            int[:] csrT_indices,
+            int[:] csrT_indptr,
+            double[:,:] dist_matrix,
+            int[:,:] pred,
             DTYPE_t limit):
     cdef:
         unsigned int Nind = dist_matrix.shape[0]
@@ -787,15 +787,15 @@ cdef _dijkstra_undirected(
 
 
 cdef _dijkstra_undirected_multi(
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csrT_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csrT_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csrT_indptr,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_matrix,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] pred,
+            int[:] source_indices,
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:] csrT_weights,
+            int[:] csrT_indices,
+            int[:] csrT_indptr,
+            double[:] dist_matrix,
+            int[:] pred,
             DTYPE_t limit):
     cdef:
         unsigned int Nind = source_indices.shape[0]
@@ -1011,12 +1011,12 @@ def bellman_ford(csgraph, directed=True, indices=None,
 
 
 cdef int _bellman_ford_directed(
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
-            np.ndarray[ITYPE_t, ndim=2, mode='c'] pred):
+            int[:] source_indices,
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:,:] dist_matrix,
+            int[:,:] pred):
     cdef:
         unsigned int Nind = dist_matrix.shape[0]
         unsigned int N = dist_matrix.shape[1]
@@ -1052,12 +1052,12 @@ cdef int _bellman_ford_directed(
 
 
 cdef int _bellman_ford_undirected(
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
-            np.ndarray[ITYPE_t, ndim=2, mode='c'] pred):
+            int[:] source_indices,
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:,:] dist_matrix,
+            int[:,:] pred):
     cdef:
         unsigned int Nind = dist_matrix.shape[0]
         unsigned int N = dist_matrix.shape[1]
@@ -1276,10 +1276,10 @@ def johnson(csgraph, directed=True, indices=None,
 
 
 cdef void _johnson_add_weights(
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_array):
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:] dist_array):
     # let w(u, v) = w(u, v) + h(u) - h(v)
     cdef unsigned int j, k, N = dist_array.shape[0]
 
@@ -1290,10 +1290,10 @@ cdef void _johnson_add_weights(
 
 
 cdef int _johnson_directed(
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_array):
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:] dist_array):
     cdef:
         unsigned int N = dist_array.shape[0]
         unsigned int j, k, j_source, count
@@ -1326,10 +1326,10 @@ cdef int _johnson_directed(
 
 
 cdef int _johnson_undirected(
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_array):
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:] dist_array):
     cdef:
         unsigned int N = dist_array.shape[0]
         unsigned int j, k, j_source, count
