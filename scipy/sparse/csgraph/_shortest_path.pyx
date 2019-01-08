@@ -391,79 +391,10 @@ cdef void _floyd_warshall(
                         dist_matrix[i, j] = d_ijk
 
 
-def dijkstra_multi(csgraph, directed=True, indices=None,
-             return_predecessors=False,
-             unweighted=False, limit=np.inf):
-    csgraph = validate_graph(csgraph, directed, DTYPE,
-                             dense_output=False)
-
-    if np.any(csgraph.data < 0):
-        warnings.warn("Graph has negative weights: dijkstra will give "
-                      "inaccurate results if the graph contains negative "
-                      "cycles. Consider johnson or bellman_ford.")
-
-    N = csgraph.shape[0]
-
-    #------------------------------
-    # initialize/validate indices
-    if indices is None:
-        indices = np.arange(N, dtype=ITYPE)
-        return_shape = (N,)
-    else:
-        indices = np.array(indices, order='C', dtype=ITYPE, copy=True)
-        return_shape = (N,)
-        indices = np.atleast_1d(indices).reshape(-1)
-        indices[indices < 0] += N
-        if np.any(indices < 0) or np.any(indices >= N):
-            raise ValueError("indices out of range 0...N")
-
-    cdef DTYPE_t limitf = limit
-    if limitf < 0:
-        raise ValueError('limit must be >= 0')
-
-    #------------------------------
-    # initialize dist_matrix for output
-    dist_matrix = np.zeros((N), dtype=DTYPE)
-    dist_matrix.fill(np.inf)
-    dist_matrix[indices] = 0
-
-    #------------------------------
-    # initialize predecessors for output
-    if return_predecessors:
-        predecessor_matrix = np.empty((N), dtype=ITYPE)
-        predecessor_matrix.fill(NULL_IDX)
-    else:
-        predecessor_matrix = np.empty((0), dtype=ITYPE)
-
-    if unweighted:
-        csr_data = np.ones(csgraph.data.shape)
-    else:
-        csr_data = csgraph.data
-
-    if directed:
-        raise Exception('directed not yet implemented')
-    else:
-        csgraphT = csgraph.T.tocsr()
-        if unweighted:
-            csrT_data = csr_data
-        else:
-            csrT_data = csgraphT.data
-        _dijkstra_undirected_multi(indices,
-                             csr_data, csgraph.indices, csgraph.indptr,
-                             csrT_data, csgraphT.indices, csgraphT.indptr,
-                             dist_matrix, predecessor_matrix, limitf)
-
-    if return_predecessors:
-        return (dist_matrix.reshape(return_shape),
-                predecessor_matrix.reshape(return_shape))
-    else:
-        return dist_matrix.reshape(return_shape)
-
-
-
 def dijkstra(csgraph, directed=True, indices=None,
              return_predecessors=False,
-             unweighted=False, limit=np.inf):
+             unweighted=False, limit=np.inf, 
+             multi_target=False):
     """
     dijkstra(csgraph, directed=True, indices=None, return_predecessors=False,
              unweighted=False, limit=np.inf)
@@ -497,8 +428,13 @@ def dijkstra(csgraph, directed=True, indices=None,
         will decrease computation time by aborting calculations between pairs
         that are separated by a distance > limit. For such pairs, the distance
         will be equal to np.inf (i.e., not connected).
-
-        .. versionadded:: 0.14.0
+    multi_target: bool, optional
+        if False (default), independantly find the shortest path
+        to every index in indices
+        If True, find the shortest path to any index in indices,
+        resulting distance matrix with be Kx1 vector, where K is the len(indices)
+        and predecessor matrix will be Nx1. Much faster if this is what you want.
+        .. versionadded:: 0.15.0
 
     Returns
     -------
@@ -572,7 +508,10 @@ def dijkstra(csgraph, directed=True, indices=None,
         return_shape = indices.shape + (N,)
     else:
         indices = np.array(indices, order='C', dtype=ITYPE, copy=True)
-        return_shape = indices.shape + (N,)
+        if multi_target:
+            return_shape = (N,)
+        else:
+            return_shape = indices.shape + (N,)
         indices = np.atleast_1d(indices).reshape(-1)
         indices[indices < 0] += N
         if np.any(indices < 0) or np.any(indices >= N):
@@ -584,17 +523,29 @@ def dijkstra(csgraph, directed=True, indices=None,
 
     #------------------------------
     # initialize dist_matrix for output
-    dist_matrix = np.zeros((len(indices), N), dtype=DTYPE)
-    dist_matrix.fill(np.inf)
-    dist_matrix[np.arange(len(indices)), indices] = 0
+    if multi_target:
+        dist_matrix = np.zeros((N), dtype=DTYPE)
+        dist_matrix.fill(np.inf)
+        dist_matrix[indices] = 0
+    else:
+        dist_matrix = np.zeros((len(indices), N), dtype=DTYPE)
+        dist_matrix.fill(np.inf)
+        dist_matrix[np.arange(len(indices)), indices] = 0
 
     #------------------------------
     # initialize predecessors for output
     if return_predecessors:
-        predecessor_matrix = np.empty((len(indices), N), dtype=ITYPE)
-        predecessor_matrix.fill(NULL_IDX)
+        if multi_target:
+            predecessor_matrix = np.empty((N), dtype=ITYPE)
+            predecessor_matrix.fill(NULL_IDX)
+        else:
+            predecessor_matrix = np.empty((len(indices), N), dtype=ITYPE)
+            predecessor_matrix.fill(NULL_IDX)
     else:
-        predecessor_matrix = np.empty((0, N), dtype=ITYPE)
+        if multi_target:
+            predecessor_matrix = np.empty((0), dtype=ITYPE)
+        else:
+            predecessor_matrix = np.empty((0, N), dtype=ITYPE)
 
     if unweighted:
         csr_data = np.ones(csgraph.data.shape)
@@ -602,19 +553,30 @@ def dijkstra(csgraph, directed=True, indices=None,
         csr_data = csgraph.data
 
     if directed:
-        _dijkstra_directed(indices,
-                           csr_data, csgraph.indices, csgraph.indptr,
-                           dist_matrix, predecessor_matrix, limitf)
+        if multi_target:
+            _dijkstra_directed_multi(indices,
+                                     csr_data, csgraph.indices, csgraph.indptr,
+                                     dist_matrix, predecessor_matrix, limitf)
+        else:
+            _dijkstra_directed(indices,
+                              csr_data, csgraph.indices, csgraph.indptr,
+                              dist_matrix, predecessor_matrix, limitf)
     else:
         csgraphT = csgraph.T.tocsr()
         if unweighted:
             csrT_data = csr_data
         else:
             csrT_data = csgraphT.data
-        _dijkstra_undirected(indices,
-                             csr_data, csgraph.indices, csgraph.indptr,
-                             csrT_data, csgraphT.indices, csgraphT.indptr,
-                             dist_matrix, predecessor_matrix, limitf)
+        if multi_target:
+            _dijkstra_undirected_multi(indices,
+                                       csr_data, csgraph.indices, csgraph.indptr,
+                                       csrT_data, csgraphT.indices, csgraphT.indptr,
+                                       dist_matrix, predecessor_matrix, limitf)
+        else:
+            _dijkstra_undirected(indices,
+                                 csr_data, csgraph.indices, csgraph.indptr,
+                                 csrT_data, csgraphT.indices, csgraphT.indptr,
+                                 dist_matrix, predecessor_matrix, limitf)
 
     if return_predecessors:
         return (dist_matrix.reshape(return_shape),
@@ -683,6 +645,70 @@ cdef _dijkstra_directed(
 
     free(nodes)
 
+cdef _dijkstra_directed_multi(
+            np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
+            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
+            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
+            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
+            np.ndarray[DTYPE_t, ndim=1, mode='c'] dist_matrix,
+            np.ndarray[ITYPE_t, ndim=1, mode='c'] pred,
+            DTYPE_t limit):
+    cdef unsigned int Nind = source_indices.shape[0]
+    cdef unsigned int N = dist_matrix.shape[0]
+    cdef unsigned int i, k, j_source, j_current
+    cdef ITYPE_t j
+
+    cdef DTYPE_t next_val
+
+    cdef int return_pred = (pred.size > 0)
+
+    cdef FibonacciHeap heap
+    cdef FibonacciNode *v
+    cdef FibonacciNode *current_node
+    cdef FibonacciNode* nodes = <FibonacciNode*> malloc(N *
+                                                        sizeof(FibonacciNode))
+    for k in range(N):
+        initialize_node(&nodes[k], k)
+
+    # initialize the heap with each of the starting 
+    # nodes on the heap and in a scanned state with 0 values
+    # and their entry of the distance matrix = 0
+    # pred will lead back to one of the starting indices
+    heap.min_node = NULL
+    for i in range(Nind):
+        j_source = source_indices[i]
+        dist_matrix[j_source] = 0
+        current_node = &nodes[j_source]
+        current_node.state = SCANNED
+        insert_node(&heap, &nodes[j_source])
+
+    
+    while heap.min_node:
+        v = remove_min(&heap)
+        v.state = SCANNED
+
+        for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
+            j_current = csr_indices[j]
+            current_node = &nodes[j_current]
+            if current_node.state != SCANNED:
+                next_val = v.val + csr_weights[j]
+                if next_val <= limit:
+                    if current_node.state == NOT_IN_HEAP:
+                        current_node.state = IN_HEAP
+                        current_node.val = next_val
+                        insert_node(&heap, current_node)
+                        if return_pred:
+                            pred[j_current] = v.index
+                    elif current_node.val > next_val:
+                        decrease_val(&heap, current_node,
+                                        next_val)
+                        if return_pred:
+                            pred[j_current] = v.index
+
+        #v has now been scanned: add the distance to the results
+        dist_matrix[v.index] = v.val
+
+    free(nodes)
 
 cdef _dijkstra_undirected(
             np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
