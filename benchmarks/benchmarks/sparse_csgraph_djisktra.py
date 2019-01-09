@@ -11,7 +11,7 @@ except ImportError:
 from .common import Benchmark
 
 
-class DijkstraChain(Benchmark):
+class Dijkstra(Benchmark):
     params = [
         [30, 300, 900]
     ]
@@ -24,7 +24,6 @@ class DijkstraChain(Benchmark):
         self.data = data
         # choose some random vertices
         v = np.arange(n)
-        np.random.seed(42)
         np.random.shuffle(v)
         self.indices = v[:int(n*.1)]
 
