@@ -34,7 +34,7 @@ class Dijkstra(Benchmark):
                       multi_target=False)
         ds = np.min(dm, axis=1) 
 
-    def time_dijkstra_multi(self, n, format, normed):
+    def time_dijkstra_multi(self, n):
         ds = dijkstra(self.data,
                       directed=False,
                       indices=self.indices,
