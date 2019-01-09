@@ -17,7 +17,7 @@ class Dijkstra(Benchmark):
     ]
     param_names = ['n', 'format', 'normed']
 
-    def setup(self, n, format):
+    def setup(self, n):
         # make a random connectivity matrix
         data = scipy.sparse.rand(n, n, density=0.2, format='csc', random_state=42, dtype=np.bool)
         data.setdiag(np.zeros(n, dtype=np.bool))
@@ -27,7 +27,7 @@ class Dijkstra(Benchmark):
         np.random.shuffle(v)
         self.indices = v[:int(n*.1)]
 
-    def time_dijkstra_single(self, n, format, normed):
+    def time_dijkstra_single(self, n):
         dm = dijkstra(self.data,
                       directed=False,
                       indices=self.indices,
