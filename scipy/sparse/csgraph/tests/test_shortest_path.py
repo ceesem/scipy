@@ -96,15 +96,22 @@ def test_undirected():
         for directed_in in (True, False):
             check(method, directed_in)
 
+
 def test_dijkstra_indices_multi_target():
     indices = np.arange(4)
-    SP = dijkstra(directed_G, directed=False, indices= indices, multi_target=True)
-    assert_array_almost_equal(SP, np.min(undirected_SP[indices,:], axis=0))
+    SP = dijkstra(directed_G,
+                  directed=False,
+                  indices=indices,
+                  multi_target=True)
+    assert_array_almost_equal(SP, np.min(undirected_SP[indices, :], axis=0))
 
-    ans =  np.min(np.array(directed_SP)[indices,:], axis=0)
-    SP = dijkstra(directed_G, directed=True, indices=indices, multi_target=True)
+    ans = np.min(np.array(directed_SP)[indices, :], axis=0)
+    SP = dijkstra(directed_G,
+                  directed=True,
+                  indices=indices,
+                  multi_target=True)
     assert_array_almost_equal(SP, ans)
-    
+
 
 def test_shortest_path_indices():
     indices = np.arange(4)
