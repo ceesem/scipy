@@ -97,20 +97,41 @@ def test_undirected():
             check(method, directed_in)
 
 
-def test_dijkstra_indices_min_only():
-    indices = np.arange(4)
-    SP = dijkstra(directed_G,
-                  directed=False,
-                  indices=indices,
-                  min_only=True)
-    assert_array_almost_equal(SP, np.min(undirected_SP[indices, :], axis=0))
 
-    ans = np.min(np.array(directed_SP)[indices, :], axis=0)
-    SP = dijkstra(directed_G,
-                  directed=True,
-                  indices=indices,
-                  min_only=True)
-    assert_array_almost_equal(SP, ans)
+
+
+def test_dijkstra_indices_min_only():
+
+    SP_res = {True: directed_SP,
+              False: undirected_SP}
+    pred_res = {True: directed_pred,
+                False: undirected_pred}
+
+    def get_targets(pred):
+        targets = -9999*np.ones(pred.shape)
+        for k in range(len(pred)):
+            p = k
+            # loop till you don't get a pointer
+            while(pred[p] != -9999):
+                p = pred[p]
+            targets[k] = p
+        return targets
+
+    def check(directed):
+        indices = np.array([0, 2, 4], np.int64)
+        min_ind_ans = np.argmin(SP_res[directed][indices, :], axis=0)
+        min_d_ans = pred_res[directed][indices, min_ind_ans]
+        min_ind_ans[min_ind_ans == 0] = -9999
+        min_ind_ans[np.isinf(min_ind_ans)] = -9999
+
+        SP, pred = dijkstra(directed_G,
+                            directed=directed,
+                            indices=indices,
+                            min_only=True,
+                            return_predecessors=True)
+        targets = get_targets(pred)
+        assert_array_almost_equal(SP, min_d_ans)
+        assert_array_equal(min_ind_ans, targets)
 
 
 def test_shortest_path_indices():
