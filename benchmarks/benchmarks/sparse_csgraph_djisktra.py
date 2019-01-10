@@ -31,11 +31,11 @@ class Dijkstra(Benchmark):
         dm = dijkstra(self.data,
                       directed=False,
                       indices=self.indices,
-                      multi_target=False)
+                      min_only=False)
         ds = np.min(dm, axis=1) 
 
     def time_dijkstra_multi(self, n):
         ds = dijkstra(self.data,
                       directed=False,
                       indices=self.indices,
-                      multi_target=True)
+                      min_only=True)

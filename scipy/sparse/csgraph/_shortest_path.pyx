@@ -394,7 +394,7 @@ cdef void _floyd_warshall(
 def dijkstra(csgraph, directed=True, indices=None,
              return_predecessors=False,
              unweighted=False, limit=np.inf, 
-             multi_target=False):
+             min_only=False):
     """
     dijkstra(csgraph, directed=True, indices=None, return_predecessors=False,
              unweighted=False, limit=np.inf)
@@ -430,7 +430,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         will be equal to np.inf (i.e., not connected).
 
         .. versionadded:: 0.14.0
-    multi_target: bool, optional
+    min_only: bool, optional
 ￼        If False (default), for every node in the graph, find the shortest path to every node in indices.
         If True, for every node in the graph, find the shortest path to any of the nodes in indices (which
         can be substantially faster).
@@ -440,14 +440,14 @@ def dijkstra(csgraph, directed=True, indices=None,
     Returns
     -------
     dist_matrix : ndarray, shape ([n_indices, ]n_nodes,)
-        The matrix of distances between graph nodes. If multi_target=False, dist_matrix
+        The matrix of distances between graph nodes. If min_only=False, dist_matrix
         has shape (n_indices, n_nodes) and dist_matrix[i, j] gives the shortest distance
         from point i to point j along the graph. If mult_target=True, dist_matrix has
         shape (n_nodes,) and contains the shortest path from each node to any
         of the nodes in indices.
 
     predecessors : ndarray, shape ([n_indices, ]n_nodes,)
-        If multi_target=False, this has shape (n_indices, n_nodes),
+        If min_only=False, this has shape (n_indices, n_nodes),
         otherwise it has shape (n_nodes,).
         Returned only if return_predecessors == True.
         The matrix of predecessors, which can be used to reconstruct
@@ -514,7 +514,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         return_shape = indices.shape + (N,)
     else:
         indices = np.array(indices, order='C', dtype=ITYPE, copy=True)
-        if multi_target:
+        if min_only:
             return_shape = (N,)
         else:
             return_shape = indices.shape + (N,)
@@ -529,7 +529,7 @@ def dijkstra(csgraph, directed=True, indices=None,
 
     #------------------------------
     # initialize dist_matrix for output
-    if multi_target:
+    if min_only:
         dist_matrix = np.zeros((N), dtype=DTYPE)
         dist_matrix.fill(np.inf)
         dist_matrix[indices] = 0
@@ -541,14 +541,14 @@ def dijkstra(csgraph, directed=True, indices=None,
     #------------------------------
     # initialize predecessors for output
     if return_predecessors:
-        if multi_target:
+        if min_only:
             predecessor_matrix = np.empty((N), dtype=ITYPE)
             predecessor_matrix.fill(NULL_IDX)
         else:
             predecessor_matrix = np.empty((len(indices), N), dtype=ITYPE)
             predecessor_matrix.fill(NULL_IDX)
     else:
-        if multi_target:
+        if min_only:
             predecessor_matrix = np.empty((0), dtype=ITYPE)
         else:
             predecessor_matrix = np.empty((0, N), dtype=ITYPE)
@@ -559,7 +559,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         csr_data = csgraph.data
 
     if directed:
-        if multi_target:
+        if min_only:
             _dijkstra_directed_multi(indices,
                                      csr_data, csgraph.indices, csgraph.indptr,
                                      dist_matrix, predecessor_matrix, limitf)
@@ -573,7 +573,7 @@ def dijkstra(csgraph, directed=True, indices=None,
             csrT_data = csr_data
         else:
             csrT_data = csgraphT.data
-        if multi_target:
+        if min_only:
             _dijkstra_undirected_multi(indices,
                                        csr_data, csgraph.indices, csgraph.indptr,
                                        csrT_data, csgraphT.indices, csgraphT.indptr,
