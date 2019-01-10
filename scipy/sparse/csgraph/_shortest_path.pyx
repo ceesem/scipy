@@ -431,20 +431,24 @@ def dijkstra(csgraph, directed=True, indices=None,
 
         .. versionadded:: 0.14.0
     multi_target: bool, optional
-        If False (default), independently find the shortest path to every index
-        in indices.  If True, find the shortest path to any index in indices and
-        the resulting distance matrix with be Kx1 vector, where K is the len(indices)
-        and the predecessor matrix will be Nx1. 
-        
+￼        If False (default), for every node in the graph, find the shortest path to every node in indices.
+        If True, for every node in the graph, find the shortest path to any of the nodes in indices (which
+        can be substantially faster).
+
         .. versionadded:: 1.3.0
 
     Returns
     -------
-    dist_matrix : ndarray
-        The matrix of distances between graph nodes. dist_matrix[i,j]
-        gives the shortest distance from point i to point j along the graph.
+    dist_matrix : ndarray, shape ([n_indices, ]n_nodes,)
+        The matrix of distances between graph nodes. If multi_target=False, dist_matrix
+        has shape (n_indices, n_nodes) and dist_matrix[i, j] gives the shortest distance
+        from point i to point j along the graph. If mult_target=True, dist_matrix has
+        shape (n_nodes,) and contains the shortest path from each node to any
+        of the nodes in indices.
 
-    predecessors : ndarray
+    predecessors : ndarray, shape ([n_indices, ]n_nodes,)
+        If multi_target=False, this has shape (n_indices, n_nodes),
+        otherwise it has shape (n_nodes,).
         Returned only if return_predecessors == True.
         The matrix of predecessors, which can be used to reconstruct
         the shortest paths.  Row i of the predecessor matrix contains
