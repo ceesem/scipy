@@ -428,12 +428,14 @@ def dijkstra(csgraph, directed=True, indices=None,
         will decrease computation time by aborting calculations between pairs
         that are separated by a distance > limit. For such pairs, the distance
         will be equal to np.inf (i.e., not connected).
+
         .. versionadded:: 0.14.0
     multi_target: bool, optional
         If False (default), independently find the shortest path to every index
         in indices.  If True, find the shortest path to any index in indices and
         the resulting distance matrix with be Kx1 vector, where K is the len(indices)
         and the predecessor matrix will be Nx1. 
+        
         .. versionadded:: 1.3.0
 
     Returns
