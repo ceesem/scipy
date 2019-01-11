@@ -446,7 +446,6 @@ def dijkstra(csgraph, directed=True, indices=None,
         gives the shortest distance from point i to point j along the graph.
         If min_only=True, dist_matrix has shape (n_nodes,) and contains the
         shortest path from each node to any of the nodes in indices.
-
     predecessors : ndarray, shape ([n_indices, ]n_nodes,)
         If min_only=False, this has shape (n_indices, n_nodes),
         otherwise it has shape (n_nodes,).
@@ -457,9 +456,9 @@ def dijkstra(csgraph, directed=True, indices=None,
         predecessors[i, j] gives the index of the previous node in the
         path from point i to point j.  If no path exists between point
         i and j, then predecessors[i, j] = -9999
-    sources: ndarray, shape(n_nodes)
-        only returned if min_only=True and return_predecessors=True.
-        contains the index of the source which had the shortest path
+    sources: ndarray, shape(n_nodes,)
+        Returned only if min_only=True and return_predecessors=True.
+        Contains the index of the source which had the shortest path
         to each target.  If no path exists within the limit,
         this will contain -9999.  The value at the indices passed
         will be equal to that index (i.e. the fastest way to reach
@@ -735,16 +734,9 @@ cdef _dijkstra_directed(
             v = remove_min(&heap)
             v.state = SCANNED
 
-            _dijkstra_scan_heap(&heap,
-                                v,
-                                nodes,
-                                csr_weights,
-                                csr_indices,
-                                csr_indptr,
-                                pred,
-                                return_pred,
-                                limit,
-                                i)
+            _dijkstra_scan_heap(&heap, v, nodes,
+                                csr_weights, csr_indices, csr_indptr,
+                                pred, return_pred, limit, i)
 
             #v has now been scanned: add the distance to the results
             dist_matrix[i, v.index] = v.val
@@ -778,26 +770,16 @@ cdef _dijkstra_directed_multi(
     # nodes on the heap and in a scanned state with 0 values
     # and their entry of the distance matrix = 0
     # pred will lead back to one of the starting indices
-    _dijkstra_setup_heap_multi(&heap,
-                               nodes,
-                               source_indices,
-                               sources,
-                               dist_matrix)
+    _dijkstra_setup_heap_multi(&heap, nodes, source_indices,
+                               sources, dist_matrix)
     
     while heap.min_node:
         v = remove_min(&heap)
         v.state = SCANNED
 
-        _dijkstra_scan_heap_multi(&heap,
-                                  v,
-                                  nodes,
-                                  csr_weights,
-                                  csr_indices,
-                                  csr_indptr,
-                                  pred,
-                                  sources,
-                                  return_pred,
-                                  limit)
+        _dijkstra_scan_heap_multi(&heap, v, nodes,
+                                  csr_weights, csr_indices, csr_indptr,
+                                  pred, sources, return_pred, limit)
 
         #v has now been scanned: add the distance to the results
         dist_matrix[v.index] = v.val
@@ -841,27 +823,13 @@ cdef _dijkstra_undirected(
             v = remove_min(&heap)
             v.state = SCANNED
 
-            _dijkstra_scan_heap(&heap,
-                                v,
-                                nodes,
-                                csr_weights,
-                                csr_indices,
-                                csr_indptr,
-                                pred,
-                                return_pred,
-                                limit,
-                                i)
+            _dijkstra_scan_heap(&heap, v, nodes,
+                                csr_weights, csr_indices, csr_indptr,
+                                pred, return_pred, limit, i)
 
-            _dijkstra_scan_heap(&heap,
-                                v,
-                                nodes,
-                                csrT_weights,
-                                csrT_indices,
-                                csrT_indptr,
-                                pred,
-                                return_pred,
-                                limit,
-                                i)
+            _dijkstra_scan_heap(&heap, v, nodes,
+                                csrT_weights, csrT_indices, csrT_indptr,
+                                pred, return_pred, limit, i)
 
             #v has now been scanned: add the distance to the results
             dist_matrix[i, v.index] = v.val
@@ -894,42 +862,26 @@ cdef _dijkstra_undirected_multi(
         FibonacciNode* nodes = <FibonacciNode*> malloc(N *
                                                         sizeof(FibonacciNode))
 
-    _dijkstra_setup_heap_multi(&heap,
-                               nodes,
-                               source_indices,
-                               sources,
-                               dist_matrix)
+    _dijkstra_setup_heap_multi(&heap, nodes, source_indices,
+                               sources, dist_matrix)
     
     while heap.min_node:
         v = remove_min(&heap)
         v.state = SCANNED
 
-        _dijkstra_scan_heap_multi(&heap,
-                                  v,
-                                  nodes,
-                                  csr_weights,
-                                  csr_indices,
-                                  csr_indptr,
-                                  pred,
-                                  sources,
-                                  return_pred,
-                                  limit)
+        _dijkstra_scan_heap_multi(&heap, v, nodes,
+                                  csr_weights, csr_indices, csr_indptr,
+                                  pred, sources, return_pred, limit)
 
-        _dijkstra_scan_heap_multi(&heap,
-                                  v,
-                                  nodes,
-                                  csrT_weights,
-                                  csrT_indices,
-                                  csrT_indptr,
-                                  pred,
-                                  sources,
-                                  return_pred,
-                                  limit)
+        _dijkstra_scan_heap_multi(&heap, v,nodes,
+                                  csrT_weights, csrT_indices, csrT_indptr,
+                                  pred, sources, return_pred, limit)
 
         #v has now been scanned: add the distance to the results
         dist_matrix[v.index] = v.val
 
     free(nodes)
+
 
 def bellman_ford(csgraph, directed=True, indices=None,
                  return_predecessors=False,
