@@ -463,6 +463,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         this will contain -9999.  The value at the indices passed
         will be equal to that index (i.e. the fastest way to reach
         node i, is to start on node i).
+    
     Notes
     -----
     As currently implemented, Dijkstra's algorithm does not work for
