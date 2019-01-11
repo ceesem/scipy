@@ -430,7 +430,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         will be equal to np.inf (i.e., not connected).
 
         .. versionadded:: 0.14.0
-    min_only: bool, optional
+    min_only : bool, optional
 ￼        If False (default), for every node in the graph, find the shortest path
         to every node in indices.
         If True, for every node in the graph, find the shortest path to any of
@@ -456,7 +456,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         predecessors[i, j] gives the index of the previous node in the
         path from point i to point j.  If no path exists between point
         i and j, then predecessors[i, j] = -9999
-    sources: ndarray, shape(n_nodes,)
+    sources : ndarray, shape(n_nodes,)
         Returned only if min_only=True and return_predecessors=True.
         Contains the index of the source which had the shortest path
         to each target.  If no path exists within the limit,
