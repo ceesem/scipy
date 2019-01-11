@@ -544,12 +544,15 @@ def dijkstra(csgraph, directed=True, indices=None,
         if min_only:
             predecessor_matrix = np.empty((N), dtype=ITYPE)
             predecessor_matrix.fill(NULL_IDX)
+            source_matrix = np.empty((N), dtype=ITYPE)
+            source_matrix.fill(NULL_IDX)
         else:
             predecessor_matrix = np.empty((len(indices), N), dtype=ITYPE)
             predecessor_matrix.fill(NULL_IDX)
     else:
         if min_only:
             predecessor_matrix = np.empty((0), dtype=ITYPE)
+            source_matrix = np.empty((0), dtype=ITYPE)
         else:
             predecessor_matrix = np.empty((0, N), dtype=ITYPE)
 
@@ -562,7 +565,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         if min_only:
             _dijkstra_directed_multi(indices,
                                      csr_data, csgraph.indices, csgraph.indptr,
-                                     dist_matrix, predecessor_matrix, limitf)
+                                     dist_matrix, predecessor_matrix, source_matrix, limitf)
         else:
             _dijkstra_directed(indices,
                               csr_data, csgraph.indices, csgraph.indptr,
@@ -577,7 +580,7 @@ def dijkstra(csgraph, directed=True, indices=None,
             _dijkstra_undirected_multi(indices,
                                        csr_data, csgraph.indices, csgraph.indptr,
                                        csrT_data, csgraphT.indices, csgraphT.indptr,
-                                       dist_matrix, predecessor_matrix, limitf)
+                                       dist_matrix, predecessor_matrix, source_matrix, limitf)
         else:
             _dijkstra_undirected(indices,
                                  csr_data, csgraph.indices, csgraph.indptr,
@@ -585,8 +588,13 @@ def dijkstra(csgraph, directed=True, indices=None,
                                  dist_matrix, predecessor_matrix, limitf)
 
     if return_predecessors:
-        return (dist_matrix.reshape(return_shape),
-                predecessor_matrix.reshape(return_shape))
+        if min_only:
+            return (dist_matrix.reshape(return_shape),
+                    predecessor_matrix.reshape(return_shape),
+                    source_matrix.rereshape(return_shape))
+        else:
+            return (dist_matrix.reshape(return_shape),
+                    predecessor_matrix.reshape(return_shape))
     else:
         return dist_matrix.reshape(return_shape)
 
@@ -656,6 +664,7 @@ cdef _dijkstra_directed_multi(
             int[:] csr_indptr,
             double[:] dist_matrix,
             int[:] pred,
+            int[:] sources,
             DTYPE_t limit):
     cdef:
         unsigned int Nind = source_indices.shape[0]
@@ -792,6 +801,44 @@ cdef _dijkstra_undirected(
 
     free(nodes)
 
+cdef _dijkstra_scan_heap(FibonacciHeap heap,
+                         FibonacciNode *v,
+                         FibonacciNode* nodes,
+                         double[:] csr_weights,
+                         int[:] csr_indices,
+                         int[:] csr_indptr,
+                         int[:] pred,
+                         int[:] sources,
+                         int return_pred,
+                         DTYPE_t limit):
+    cdef:
+        unsigned int i, k, j_source, j_current
+        ITYPE_t j
+        DTYPE_t next_val
+        FibonacciNode *current_node
+       
+    for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
+            j_current = csr_indices[j]
+            current_node = &nodes[j_current]
+            if current_node.state != SCANNED:
+                next_val = v.val + csr_weights[j]
+                if next_val <= limit:
+                    if current_node.state == NOT_IN_HEAP:
+                        current_node.state = IN_HEAP
+                        current_node.val = next_val
+                        current_node.source = v.source
+                        insert_node(&heap, current_node)
+                        if return_pred:
+                            pred[j_current] = v.index
+                            sources[j_current] = v.source.index
+                    elif current_node.val > next_val:
+                        decrease_val(&heap, current_node,
+                                        next_val)
+                        current_node.source = v.source
+                        if return_pred:
+                            pred[j_current] = v.index
+                            sources[j_current] = v.source.index
+                        
 
 cdef _dijkstra_undirected_multi(
             int[:] source_indices,
@@ -803,6 +850,7 @@ cdef _dijkstra_undirected_multi(
             int[:] csrT_indptr,
             double[:] dist_matrix,
             int[:] pred,
+            int[:] sources,
             DTYPE_t limit):
     cdef:
         unsigned int Nind = source_indices.shape[0]
@@ -841,14 +889,18 @@ cdef _dijkstra_undirected_multi(
                     if current_node.state == NOT_IN_HEAP:
                         current_node.state = IN_HEAP
                         current_node.val = next_val
+                        current_node.source = v.source
                         insert_node(&heap, current_node)
                         if return_pred:
                             pred[j_current] = v.index
+                            sources[j_current] = v.source.index
                     elif current_node.val > next_val:
                         decrease_val(&heap, current_node,
                                         next_val)
+                        current_node.source = v.source
                         if return_pred:
                             pred[j_current] = v.index
+                            sources[j_current] = v.source.index
 
         for j in range(csrT_indptr[v.index], csrT_indptr[v.index + 1]):
             j_current = csrT_indices[j]
@@ -859,11 +911,13 @@ cdef _dijkstra_undirected_multi(
                     if current_node.state == NOT_IN_HEAP:
                         current_node.state = IN_HEAP
                         current_node.val = next_val
+                        current_node.source = v.source
                         insert_node(&heap, current_node)
                         if return_pred:
                             pred[j_current] = v.index
                     elif current_node.val > next_val:
                         decrease_val(&heap, current_node, next_val)
+                        current_node.source = v.source
                         if return_pred:
                             pred[j_current] = v.index
 
@@ -1391,6 +1445,7 @@ cdef struct FibonacciNode:
     FibonacciNode* left_sibling
     FibonacciNode* right_sibling
     FibonacciNode* children
+    FibonacciNode* source
 
 
 cdef void initialize_node(FibonacciNode* node,
@@ -1407,7 +1462,7 @@ cdef void initialize_node(FibonacciNode* node,
     node.left_sibling = NULL
     node.right_sibling = NULL
     node.children = NULL
-
+    node.source = node
 
 cdef FibonacciNode* rightmost_sibling(FibonacciNode* node):
     # Assumptions: - node is a valid pointer
@@ -1510,6 +1565,8 @@ cdef void decrease_val(FibonacciHeap* heap,
     #              - node is not the child or sibling of another node
     #              - node is in the heap
     node.val = newval
+    if node.parent:
+        node.source = node.parent.source
     if node.parent and (node.parent.val >= newval):
         remove(node)
         insert_node(heap, node)

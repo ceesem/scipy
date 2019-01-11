@@ -97,9 +97,6 @@ def test_undirected():
             check(method, directed_in)
 
 
-
-
-
 def test_dijkstra_indices_min_only():
 
     SP_res = {True: directed_SP,
@@ -124,11 +121,11 @@ def test_dijkstra_indices_min_only():
         min_ind_ans[min_ind_ans == 0] = -9999
         min_ind_ans[np.isinf(min_ind_ans)] = -9999
 
-        SP, pred = dijkstra(directed_G,
-                            directed=directed,
-                            indices=indices,
-                            min_only=True,
-                            return_predecessors=True)
+        SP, pred, sources = dijkstra(directed_G,
+                                     directed=directed,
+                                     indices=indices,
+                                     min_only=True,
+                                     return_predecessors=True)
         targets = get_targets(pred)
         assert_array_almost_equal(SP, min_d_ans)
         assert_array_equal(min_ind_ans, targets)
