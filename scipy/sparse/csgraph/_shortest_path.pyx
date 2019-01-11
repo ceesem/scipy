@@ -598,14 +598,110 @@ def dijkstra(csgraph, directed=True, indices=None,
     else:
         return dist_matrix.reshape(return_shape)
 
+cdef _dijkstra_setup_heap_multi(FibonacciHeap *heap,
+                                FibonacciNode* nodes,
+                                int[:] source_indices,
+                                int[:] sources,
+                                double[:] dist_matrix):
+    cdef:
+        unsigned int Nind = source_indices.shape[0]
+        unsigned int N = dist_matrix.shape[0]
+        unsigned int i, k, j_source
+        FibonacciNode *current_node
+      
+    for k in range(N):
+        initialize_node(&nodes[k], k)
+
+    heap.min_node = NULL
+    for i in range(Nind):
+        j_source = source_indices[i]
+        dist_matrix[j_source] = 0
+        sources[j_source] = j_source
+        current_node = &nodes[j_source]
+        current_node.state = SCANNED
+        current_node.source = j_source
+        insert_node(heap, &nodes[j_source])
+
+cdef _dijkstra_scan_heap_multi(FibonacciHeap *heap,
+                               FibonacciNode *v,
+                               FibonacciNode* nodes,
+                               double[:] csr_weights,
+                               int[:] csr_indices,
+                               int[:] csr_indptr,
+                               int[:] pred,
+                               int[:] sources,
+                               int return_pred,
+                               DTYPE_t limit):
+    cdef:
+        unsigned int i, k, j_source, j_current
+        ITYPE_t j
+        DTYPE_t next_val
+        FibonacciNode *current_node
+ 
+
+    for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
+        j_current = csr_indices[j]
+        current_node = &nodes[j_current]
+        if current_node.state != SCANNED:
+            next_val = v.val + csr_weights[j]
+            if next_val <= limit:
+                if current_node.state == NOT_IN_HEAP:
+                    current_node.state = IN_HEAP
+                    current_node.val = next_val
+                    current_node.source = v.source
+                    insert_node(heap, current_node)
+                    if return_pred:
+                        pred[j_current] = v.index
+                        sources[j_current] = v.source
+                elif current_node.val > next_val:
+                    current_node.source = v.source
+                    decrease_val(heap, current_node,
+                                    next_val)
+                    if return_pred:
+                        pred[j_current] = v.index
+                        sources[j_current] = v.source
+
+cdef _dijkstra_scan_heap(FibonacciHeap *heap,
+                         FibonacciNode *v,
+                         FibonacciNode* nodes,
+                         double[:] csr_weights,
+                         int[:] csr_indices,
+                         int[:] csr_indptr,
+                         int[:,:] pred,
+                         int return_pred,
+                         DTYPE_t limit,
+                         int i):
+    cdef:
+        unsigned int k, j_source, j_current
+        ITYPE_t j
+        DTYPE_t next_val
+        FibonacciNode *current_node
+ 
+    for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
+        j_current = csr_indices[j]
+        current_node = &nodes[j_current]
+        if current_node.state != SCANNED:
+            next_val = v.val + csr_weights[j]
+            if next_val <= limit:
+                if current_node.state == NOT_IN_HEAP:
+                    current_node.state = IN_HEAP
+                    current_node.val = next_val
+                    insert_node(heap, current_node)
+                    if return_pred:
+                        pred[i, j_current] = v.index
+                elif current_node.val > next_val:
+                    decrease_val(heap, current_node,
+                                    next_val)
+                    if return_pred:
+                        pred[i, j_current] = v.index
 
 cdef _dijkstra_directed(
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] source_indices,
-            np.ndarray[DTYPE_t, ndim=1, mode='c'] csr_weights,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indices,
-            np.ndarray[ITYPE_t, ndim=1, mode='c'] csr_indptr,
-            np.ndarray[DTYPE_t, ndim=2, mode='c'] dist_matrix,
-            np.ndarray[ITYPE_t, ndim=2, mode='c'] pred,
+            int[:] source_indices,
+            double[:] csr_weights,
+            int[:] csr_indices,
+            int[:] csr_indptr,
+            double[:,:] dist_matrix,
+            int[:,:] pred,
             DTYPE_t limit):
     cdef:
         unsigned int Nind = dist_matrix.shape[0]
@@ -616,7 +712,6 @@ cdef _dijkstra_directed(
         int return_pred = (pred.size > 0)
         FibonacciHeap heap
         FibonacciNode *v
-        FibonacciNode *current_node
         FibonacciNode* nodes = <FibonacciNode*> malloc(N *
                                                         sizeof(FibonacciNode))
 
@@ -634,23 +729,16 @@ cdef _dijkstra_directed(
             v = remove_min(&heap)
             v.state = SCANNED
 
-            for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
-                j_current = csr_indices[j]
-                current_node = &nodes[j_current]
-                if current_node.state != SCANNED:
-                    next_val = v.val + csr_weights[j]
-                    if next_val <= limit:
-                        if current_node.state == NOT_IN_HEAP:
-                            current_node.state = IN_HEAP
-                            current_node.val = next_val
-                            insert_node(&heap, current_node)
-                            if return_pred:
-                                pred[i, j_current] = v.index
-                        elif current_node.val > next_val:
-                            decrease_val(&heap, current_node,
-                                         next_val)
-                            if return_pred:
-                                pred[i, j_current] = v.index
+            _dijkstra_scan_heap(&heap,
+                                v,
+                                nodes,
+                                csr_weights,
+                                csr_indices,
+                                csr_indptr,
+                                pred,
+                                return_pred,
+                                limit,
+                                i)
 
             #v has now been scanned: add the distance to the results
             dist_matrix[i, v.index] = v.val
@@ -678,51 +766,32 @@ cdef _dijkstra_directed_multi(
 
         FibonacciHeap heap
         FibonacciNode *v
-        FibonacciNode *current_node
         FibonacciNode* nodes = <FibonacciNode*> malloc(N * sizeof(FibonacciNode))
-    for k in range(N):
-        initialize_node(&nodes[k], k)
 
     # initialize the heap with each of the starting 
     # nodes on the heap and in a scanned state with 0 values
     # and their entry of the distance matrix = 0
     # pred will lead back to one of the starting indices
-    heap.min_node = NULL
-    for i in range(Nind):
-        j_source = source_indices[i]
-        dist_matrix[j_source] = 0
-        sources[j_source] = j_source
-        current_node = &nodes[j_source]
-        current_node.state = SCANNED
-        current_node.source = j_source
-        insert_node(&heap, &nodes[j_source])
-
+    _dijkstra_setup_heap_multi(&heap,
+                               nodes,
+                               source_indices,
+                               sources,
+                               dist_matrix)
     
     while heap.min_node:
         v = remove_min(&heap)
         v.state = SCANNED
 
-        for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
-            j_current = csr_indices[j]
-            current_node = &nodes[j_current]
-            if current_node.state != SCANNED:
-                next_val = v.val + csr_weights[j]
-                if next_val <= limit:
-                    if current_node.state == NOT_IN_HEAP:
-                        current_node.state = IN_HEAP
-                        current_node.val = next_val
-                        current_node.source = v.source
-                        insert_node(&heap, current_node)
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source
-                    elif current_node.val > next_val:
-                        current_node.source = v.source
-                        decrease_val(&heap, current_node,
-                                        next_val)
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source
+        _dijkstra_scan_heap_multi(&heap,
+                                  v,
+                                  nodes,
+                                  csr_weights,
+                                  csr_indices,
+                                  csr_indptr,
+                                  pred,
+                                  sources,
+                                  return_pred,
+                                  limit)
 
         #v has now been scanned: add the distance to the results
         dist_matrix[v.index] = v.val
@@ -749,7 +818,6 @@ cdef _dijkstra_undirected(
         int return_pred = (pred.size > 0)
         FibonacciHeap heap
         FibonacciNode *v
-        FibonacciNode *current_node
         FibonacciNode* nodes = <FibonacciNode*> malloc(N *
                                                         sizeof(FibonacciNode))
 
@@ -767,83 +835,34 @@ cdef _dijkstra_undirected(
             v = remove_min(&heap)
             v.state = SCANNED
 
-            for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
-                j_current = csr_indices[j]
-                current_node = &nodes[j_current]
-                if current_node.state != SCANNED:
-                    next_val = v.val + csr_weights[j]
-                    if next_val <= limit:
-                        if current_node.state == NOT_IN_HEAP:
-                            current_node.state = IN_HEAP
-                            current_node.val = next_val
-                            insert_node(&heap, current_node)
-                            if return_pred:
-                                pred[i, j_current] = v.index
-                        elif current_node.val > next_val:
-                            decrease_val(&heap, current_node,
-                                         next_val)
-                            if return_pred:
-                                pred[i, j_current] = v.index
+            _dijkstra_scan_heap(&heap,
+                                v,
+                                nodes,
+                                csr_weights,
+                                csr_indices,
+                                csr_indptr,
+                                pred,
+                                return_pred,
+                                limit,
+                                i)
 
-            for j in range(csrT_indptr[v.index], csrT_indptr[v.index + 1]):
-                j_current = csrT_indices[j]
-                current_node = &nodes[j_current]
-                if current_node.state != SCANNED:
-                    next_val = v.val + csrT_weights[j]
-                    if next_val <= limit:
-                        if current_node.state == NOT_IN_HEAP:
-                            current_node.state = IN_HEAP
-                            current_node.val = next_val
-                            insert_node(&heap, current_node)
-                            if return_pred:
-                                pred[i, j_current] = v.index
-                        elif current_node.val > next_val:
-                            decrease_val(&heap, current_node, next_val)
-                            if return_pred:
-                                pred[i, j_current] = v.index
+            _dijkstra_scan_heap(&heap,
+                                v,
+                                nodes,
+                                csrT_weights,
+                                csrT_indices,
+                                csrT_indptr,
+                                pred,
+                                return_pred,
+                                limit,
+                                i)
 
             #v has now been scanned: add the distance to the results
             dist_matrix[i, v.index] = v.val
 
     free(nodes)
 
-cdef _dijkstra_scan_heap(FibonacciHeap heap,
-                         FibonacciNode *v,
-                         FibonacciNode* nodes,
-                         double[:] csr_weights,
-                         int[:] csr_indices,
-                         int[:] csr_indptr,
-                         int[:] pred,
-                         int[:] sources,
-                         int return_pred,
-                         DTYPE_t limit):
-    cdef:
-        unsigned int i, k, j_source, j_current
-        ITYPE_t j
-        DTYPE_t next_val
-        FibonacciNode *current_node
-       
-    for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
-            j_current = csr_indices[j]
-            current_node = &nodes[j_current]
-            if current_node.state != SCANNED:
-                next_val = v.val + csr_weights[j]
-                if next_val <= limit:
-                    if current_node.state == NOT_IN_HEAP:
-                        current_node.state = IN_HEAP
-                        current_node.val = next_val
-                        current_node.source = v.source
-                        insert_node(&heap, current_node)
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source.index
-                    elif current_node.val > next_val:
-                        decrease_val(&heap, current_node,
-                                        next_val)
-                        current_node.source = v.source
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source.index
+
                         
 
 cdef _dijkstra_undirected_multi(
@@ -870,66 +889,38 @@ cdef _dijkstra_undirected_multi(
         FibonacciNode *current_node
         FibonacciNode* nodes = <FibonacciNode*> malloc(N *
                                                         sizeof(FibonacciNode))
-    for k in range(N):
-        initialize_node(&nodes[k], k)
 
-    heap.min_node = NULL
-    for i in range(Nind):
-        j_source = source_indices[i]
-        dist_matrix[j_source] = 0
-        sources[j_source] = j_source
-        current_node = &nodes[j_source]
-        current_node.state = SCANNED
-        current_node.source = j_source
-        insert_node(&heap, current_node)
-
+    _dijkstra_setup_heap_multi(&heap,
+                               nodes,
+                               source_indices,
+                               sources,
+                               dist_matrix)
     
     while heap.min_node:
         v = remove_min(&heap)
         v.state = SCANNED
 
-        for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
-            j_current = csr_indices[j]
-            current_node = &nodes[j_current]
-            if current_node.state != SCANNED:
-                next_val = v.val + csr_weights[j]
-                if next_val <= limit:
-                    if current_node.state == NOT_IN_HEAP:
-                        current_node.state = IN_HEAP
-                        current_node.val = next_val
-                        current_node.source = v.source
-                        insert_node(&heap, current_node)
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source
-                    elif current_node.val > next_val:
-                        current_node.source = v.source
-                        decrease_val(&heap, current_node,
-                                        next_val)
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source
+        _dijkstra_scan_heap_multi(&heap,
+                                  v,
+                                  nodes,
+                                  csr_weights,
+                                  csr_indices,
+                                  csr_indptr,
+                                  pred,
+                                  sources,
+                                  return_pred,
+                                  limit)
 
-        for j in range(csrT_indptr[v.index], csrT_indptr[v.index + 1]):
-            j_current = csrT_indices[j]
-            current_node = &nodes[j_current]
-            if current_node.state != SCANNED:
-                next_val = v.val + csrT_weights[j]
-                if next_val <= limit:
-                    if current_node.state == NOT_IN_HEAP:
-                        current_node.state = IN_HEAP
-                        current_node.val = next_val
-                        current_node.source = v.source
-                        insert_node(&heap, current_node)
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source
-                    elif current_node.val > next_val:
-                        decrease_val(&heap, current_node, next_val)
-                        current_node.source = v.source
-                        if return_pred:
-                            pred[j_current] = v.index
-                            sources[j_current] = v.source
+        _dijkstra_scan_heap_multi(&heap,
+                                  v,
+                                  nodes,
+                                  csrT_weights,
+                                  csrT_indices,
+                                  csrT_indptr,
+                                  pred,
+                                  sources,
+                                  return_pred,
+                                  limit)
 
         #v has now been scanned: add the distance to the results
         dist_matrix[v.index] = v.val
