@@ -691,8 +691,10 @@ cdef _dijkstra_directed_multi(
     for i in range(Nind):
         j_source = source_indices[i]
         dist_matrix[j_source] = 0
+        sources[j_source] = j_source
         current_node = &nodes[j_source]
         current_node.state = SCANNED
+        current_node.source = j_source
         insert_node(&heap, &nodes[j_source])
 
     
@@ -709,14 +711,18 @@ cdef _dijkstra_directed_multi(
                     if current_node.state == NOT_IN_HEAP:
                         current_node.state = IN_HEAP
                         current_node.val = next_val
+                        current_node.source = v.source
                         insert_node(&heap, current_node)
                         if return_pred:
                             pred[j_current] = v.index
+                            sources[j_current] = v.source
                     elif current_node.val > next_val:
+                        current_node.source = v.source
                         decrease_val(&heap, current_node,
                                         next_val)
                         if return_pred:
                             pred[j_current] = v.index
+                            sources[j_current] = v.source
 
         #v has now been scanned: add the distance to the results
         dist_matrix[v.index] = v.val
@@ -871,9 +877,11 @@ cdef _dijkstra_undirected_multi(
     for i in range(Nind):
         j_source = source_indices[i]
         dist_matrix[j_source] = 0
+        sources[j_source] = j_source
         current_node = &nodes[j_source]
         current_node.state = SCANNED
-        insert_node(&heap, &nodes[j_source])
+        current_node.source = j_source
+        insert_node(&heap, current_node)
 
     
     while heap.min_node:
@@ -893,14 +901,14 @@ cdef _dijkstra_undirected_multi(
                         insert_node(&heap, current_node)
                         if return_pred:
                             pred[j_current] = v.index
-                            sources[j_current] = v.source.index
+                            sources[j_current] = v.source
                     elif current_node.val > next_val:
+                        current_node.source = v.source
                         decrease_val(&heap, current_node,
                                         next_val)
-                        current_node.source = v.source
                         if return_pred:
                             pred[j_current] = v.index
-                            sources[j_current] = v.source.index
+                            sources[j_current] = v.source
 
         for j in range(csrT_indptr[v.index], csrT_indptr[v.index + 1]):
             j_current = csrT_indices[j]
@@ -915,11 +923,13 @@ cdef _dijkstra_undirected_multi(
                         insert_node(&heap, current_node)
                         if return_pred:
                             pred[j_current] = v.index
+                            sources[j_current] = v.source
                     elif current_node.val > next_val:
                         decrease_val(&heap, current_node, next_val)
                         current_node.source = v.source
                         if return_pred:
                             pred[j_current] = v.index
+                            sources[j_current] = v.source
 
         #v has now been scanned: add the distance to the results
         dist_matrix[v.index] = v.val
@@ -1439,14 +1449,14 @@ cdef enum FibonacciState:
 cdef struct FibonacciNode:
     unsigned int index
     unsigned int rank
+    unsigned int source
     FibonacciState state
     DTYPE_t val
     FibonacciNode* parent
     FibonacciNode* left_sibling
     FibonacciNode* right_sibling
     FibonacciNode* children
-    FibonacciNode* source
-
+ 
 
 cdef void initialize_node(FibonacciNode* node,
                           unsigned int index,
@@ -1454,6 +1464,7 @@ cdef void initialize_node(FibonacciNode* node,
     # Assumptions: - node is a valid pointer
     #              - node is not currently part of a heap
     node.index = index
+    node.source = -9999
     node.val = val
     node.rank = 0
     node.state = NOT_IN_HEAP
@@ -1462,7 +1473,7 @@ cdef void initialize_node(FibonacciNode* node,
     node.left_sibling = NULL
     node.right_sibling = NULL
     node.children = NULL
-    node.source = node
+    
 
 cdef FibonacciNode* rightmost_sibling(FibonacciNode* node):
     # Assumptions: - node is a valid pointer

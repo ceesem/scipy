@@ -128,7 +128,6 @@ def test_dijkstra_indices_min_only():
                                      indices=indices,
                                      min_only=True,
                                      return_predecessors=True)
-        sources = get_targets(pred)
         assert_array_almost_equal(SP, min_d_ans)
         assert_array_equal(min_ind_ans, sources)
 
