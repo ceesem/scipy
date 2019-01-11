@@ -456,7 +456,13 @@ def dijkstra(csgraph, directed=True, indices=None,
         predecessors[i, j] gives the index of the previous node in the
         path from point i to point j.  If no path exists between point
         i and j, then predecessors[i, j] = -9999
-
+    sources: ndarray, shape(n_nodes)
+        only returned if min_only=True and return_predecessors=True.
+        contains the index of the source which had the shortest path
+        to each target.  If no path exists within the limit,
+        this will contain -9999.  The value at the indices passed
+        will be equal to that index (i.e. the fastest way to reach
+        node i, is to start on node i).
     Notes
     -----
     As currently implemented, Dijkstra's algorithm does not work for
