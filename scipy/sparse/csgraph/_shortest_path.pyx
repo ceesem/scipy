@@ -591,7 +591,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         if min_only:
             return (dist_matrix.reshape(return_shape),
                     predecessor_matrix.reshape(return_shape),
-                    source_matrix.rereshape(return_shape))
+                    source_matrix.reshape(return_shape))
         else:
             return (dist_matrix.reshape(return_shape),
                     predecessor_matrix.reshape(return_shape))
