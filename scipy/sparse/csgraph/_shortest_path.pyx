@@ -431,20 +431,21 @@ def dijkstra(csgraph, directed=True, indices=None,
 
         .. versionadded:: 0.14.0
     min_only: bool, optional
-￼        If False (default), for every node in the graph, find the shortest path to every node in indices.
-        If True, for every node in the graph, find the shortest path to any of the nodes in indices (which
-        can be substantially faster).
+￼        If False (default), for every node in the graph, find the shortest path
+        to every node in indices.
+        If True, for every node in the graph, find the shortest path to any of
+        the nodes in indices (which can be substantially faster).
 
         .. versionadded:: 1.3.0
 
     Returns
     -------
     dist_matrix : ndarray, shape ([n_indices, ]n_nodes,)
-        The matrix of distances between graph nodes. If min_only=False, dist_matrix
-        has shape (n_indices, n_nodes) and dist_matrix[i, j] gives the shortest distance
-        from point i to point j along the graph. If mult_target=True, dist_matrix has
-        shape (n_nodes,) and contains the shortest path from each node to any
-        of the nodes in indices.
+        The matrix of distances between graph nodes. If min_only=False,
+        dist_matrix has shape (n_indices, n_nodes) and dist_matrix[i, j]
+        gives the shortest distance from point i to point j along the graph.
+        If min_only=True, dist_matrix has shape (n_nodes,) and contains the
+        shortest path from each node to any of the nodes in indices.
 
     predecessors : ndarray, shape ([n_indices, ]n_nodes,)
         If min_only=False, this has shape (n_indices, n_nodes),
@@ -644,7 +645,6 @@ cdef _dijkstra_scan_heap_multi(FibonacciHeap *heap,
         DTYPE_t next_val
         FibonacciNode *current_node
  
-
     for j in range(csr_indptr[v.index], csr_indptr[v.index + 1]):
         j_current = csr_indices[j]
         current_node = &nodes[j_current]
@@ -868,8 +868,6 @@ cdef _dijkstra_undirected(
 
     free(nodes)
 
-
-                        
 
 cdef _dijkstra_undirected_multi(
             int[:] source_indices,
