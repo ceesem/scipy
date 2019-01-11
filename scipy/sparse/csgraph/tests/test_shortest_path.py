@@ -101,21 +101,11 @@ def test_dijkstra_indices_min_only():
 
     SP_res = {True: directed_SP,
               False: undirected_SP}
-    pred_res = {True: directed_pred,
-                False: undirected_pred}
+    index_list = [np.array([0, 2, 4], np.int64),
+                  np.array([0, 4], np.int64),
+                  np.array([3, 4])]
 
-    def get_targets(pred):
-        targets = -9999*np.ones(pred.shape)
-        for k in range(len(pred)):
-            p = k
-            # loop till you don't get a pointer
-            while(pred[p] != -9999):
-                p = pred[p]
-            targets[k] = p
-        return targets
-
-    def check(directed):
-        indices = np.array([0, 2, 4], np.int64)
+    def check(directed, indices):
         SP_ans = np.array(SP_res[directed])
         min_ind_ans = indices[np.argmin(SP_ans[indices, :], axis=0)]
         min_d_ans = np.zeros(SP_ans.shape[0], SP_ans.dtype)
@@ -130,9 +120,10 @@ def test_dijkstra_indices_min_only():
                                      return_predecessors=True)
         assert_array_almost_equal(SP, min_d_ans)
         assert_array_equal(min_ind_ans, sources)
+    for indices in index_list:
+        for directed in (True, False):
+            check(directed, indices)
 
-    for directed in (True, False):
-        check(directed)
 
 def test_shortest_path_indices():
     indices = np.arange(4)
