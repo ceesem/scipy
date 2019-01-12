@@ -617,7 +617,8 @@ cdef _dijkstra_setup_heap_multi(FibonacciHeap *heap,
                                 FibonacciNode* nodes,
                                 int[:] source_indices,
                                 int[:] sources,
-                                double[:] dist_matrix):
+                                double[:] dist_matrix,
+                                int return_pred):
     cdef:
         unsigned int Nind = source_indices.shape[0]
         unsigned int N = dist_matrix.shape[0]
@@ -631,7 +632,8 @@ cdef _dijkstra_setup_heap_multi(FibonacciHeap *heap,
     for i in range(Nind):
         j_source = source_indices[i]
         dist_matrix[j_source] = 0
-        sources[j_source] = j_source
+        if return_pred:
+            sources[j_source] = j_source
         current_node = &nodes[j_source]
         current_node.state = SCANNED
         current_node.source = j_source
@@ -781,7 +783,7 @@ cdef _dijkstra_directed_multi(
     # and their entry of the distance matrix = 0
     # pred will lead back to one of the starting indices
     _dijkstra_setup_heap_multi(&heap, nodes, source_indices,
-                               sources, dist_matrix)
+                               sources, dist_matrix, return_pred)
 
     while heap.min_node:
         v = remove_min(&heap)
@@ -873,7 +875,7 @@ cdef _dijkstra_undirected_multi(
                                                        sizeof(FibonacciNode))
 
     _dijkstra_setup_heap_multi(&heap, nodes, source_indices,
-                               sources, dist_matrix)
+                               sources, dist_matrix, return_pred)
 
     while heap.min_node:
         v = remove_min(&heap)
