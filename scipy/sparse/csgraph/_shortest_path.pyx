@@ -393,7 +393,7 @@ cdef void _floyd_warshall(
 
 def dijkstra(csgraph, directed=True, indices=None,
              return_predecessors=False,
-             unweighted=False, limit=np.inf, 
+             unweighted=False, limit=np.inf,
              min_only=False):
     """
     dijkstra(csgraph, directed=True, indices=None, return_predecessors=False,
@@ -409,10 +409,10 @@ def dijkstra(csgraph, directed=True, indices=None,
         The N x N array of non-negative distances representing the input graph.
     directed : bool, optional
         If True (default), then find the shortest path on a directed graph:
-        only move from point i to point j along paths csgraph[i, j] and from 
+        only move from point i to point j along paths csgraph[i, j] and from
         point j to i along paths csgraph[j, i].
         If False, then find the shortest path on an undirected graph: the
-        algorithm can progress from point i to j or j to i along either 
+        algorithm can progress from point i to j or j to i along either
         csgraph[i, j] or csgraph[j, i].
     indices : array_like or int, optional
         if specified, only compute the paths for the points at the given
@@ -431,7 +431,7 @@ def dijkstra(csgraph, directed=True, indices=None,
 
         .. versionadded:: 0.14.0
     min_only : bool, optional
-￼        If False (default), for every node in the graph, find the shortest path
+        If False (default), for every node in the graph, find the shortest path
         to every node in indices.
         If True, for every node in the graph, find the shortest path to any of
         the nodes in indices (which can be substantially faster).
@@ -457,7 +457,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         predecessors[i, j] gives the index of the previous node in the
         path from point i to point j.  If no path exists between point
         i and j, then predecessors[i, j] = -9999
-        
+
     sources : ndarray, shape(n_nodes,)
         Returned only if min_only=True and return_predecessors=True.
         Contains the index of the source which had the shortest path
@@ -465,7 +465,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         this will contain -9999.  The value at the indices passed
         will be equal to that index (i.e. the fastest way to reach
         node i, is to start on node i).
-    
+
     Notes
     -----
     As currently implemented, Dijkstra's algorithm does not work for
@@ -573,7 +573,7 @@ def dijkstra(csgraph, directed=True, indices=None,
     if directed:
         if min_only:
             _dijkstra_directed_multi(indices,
-                                     csr_data, csgraph.indices, 
+                                     csr_data, csgraph.indices,
                                      csgraph.indptr,
                                      dist_matrix, predecessor_matrix,
                                      source_matrix, limitf)
