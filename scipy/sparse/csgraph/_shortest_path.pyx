@@ -63,9 +63,9 @@ def shortest_path(csgraph, method='auto',
 
            'D'    -- Dijkstra's algorithm with Fibonacci heaps.  Computational
                      cost is approximately ``O[N(N*k + N*log(N))]``, where
-            ``k`` is the average number of connected edges per node.
-            The input csgraph will be converted to a csr
-            representation.
+                     ``k`` is the average number of connected edges per node.
+                     The input csgraph will be converted to a csr
+                     representation.
 
            'BF'   -- Bellman-Ford algorithm.  This algorithm can be used when
                      weights are negative.  If a negative cycle is encountered,
@@ -104,7 +104,6 @@ def shortest_path(csgraph, method='auto',
     dist_matrix : ndarray
         The N x N matrix of distances between graph nodes. dist_matrix[i,j]
         gives the shortest distance from point i to point j along the graph.
-
     predecessors : ndarray
         Returned only if return_predecessors == True.
         The N x N matrix of predecessors, which can be used to reconstruct
@@ -446,7 +445,6 @@ def dijkstra(csgraph, directed=True, indices=None,
         gives the shortest distance from point i to point j along the graph.
         If min_only=True, dist_matrix has shape (n_nodes,) and contains the
         shortest path from each node to any of the nodes in indices.
-
     predecessors : ndarray, shape ([n_indices, ]n_nodes,)
         If min_only=False, this has shape (n_indices, n_nodes),
         otherwise it has shape (n_nodes,).
@@ -457,7 +455,6 @@ def dijkstra(csgraph, directed=True, indices=None,
         predecessors[i, j] gives the index of the previous node in the
         path from point i to point j.  If no path exists between point
         i and j, then predecessors[i, j] = -9999
-
     sources : ndarray, shape(n_nodes,)
         Returned only if min_only=True and return_predecessors=True.
         Contains the index of the source which had the shortest path
