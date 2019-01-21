@@ -458,7 +458,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         path from point i to point j.  If no path exists between point
         i and j, then predecessors[i, j] = -9999
         
-    sources : ndarray, shape(n_nodes,)
+    sources : ndarray, shape (n_nodes,)
         Returned only if min_only=True and return_predecessors=True.
         Contains the index of the source which had the shortest path
         to each target.  If no path exists within the limit,
@@ -539,8 +539,7 @@ def dijkstra(csgraph, directed=True, indices=None,
     #------------------------------
     # initialize dist_matrix for output
     if min_only:
-        dist_matrix = np.zeros((N), dtype=DTYPE)
-        dist_matrix.fill(np.inf)
+        dist_matrix = np.full(N, np.inf, dtype=DTYPE)
         dist_matrix[indices] = 0
     else:
         dist_matrix = np.zeros((len(indices), N), dtype=DTYPE)
@@ -560,8 +559,8 @@ def dijkstra(csgraph, directed=True, indices=None,
             predecessor_matrix.fill(NULL_IDX)
     else:
         if min_only:
-            predecessor_matrix = np.empty((0), dtype=ITYPE)
-            source_matrix = np.empty((0), dtype=ITYPE)
+            predecessor_matrix = np.empty(0, dtype=ITYPE)
+            source_matrix = np.empty(0, dtype=ITYPE)
         else:
             predecessor_matrix = np.empty((0, N), dtype=ITYPE)
 
