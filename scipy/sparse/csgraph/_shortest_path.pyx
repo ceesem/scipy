@@ -63,9 +63,9 @@ def shortest_path(csgraph, method='auto',
 
            'D'    -- Dijkstra's algorithm with Fibonacci heaps.  Computational
                      cost is approximately ``O[N(N*k + N*log(N))]``, where
-            ``k`` is the average number of connected edges per node.
-            The input csgraph will be converted to a csr
-            representation.
+                     ``k`` is the average number of connected edges per node.
+                     The input csgraph will be converted to a csr
+                     representation.
 
            'BF'   -- Bellman-Ford algorithm.  This algorithm can be used when
                      weights are negative.  If a negative cycle is encountered,
@@ -104,7 +104,6 @@ def shortest_path(csgraph, method='auto',
     dist_matrix : ndarray
         The N x N matrix of distances between graph nodes. dist_matrix[i,j]
         gives the shortest distance from point i to point j along the graph.
-
     predecessors : ndarray
         Returned only if return_predecessors == True.
         The N x N matrix of predecessors, which can be used to reconstruct
@@ -393,7 +392,7 @@ cdef void _floyd_warshall(
 
 def dijkstra(csgraph, directed=True, indices=None,
              return_predecessors=False,
-             unweighted=False, limit=np.inf, 
+             unweighted=False, limit=np.inf,
              min_only=False):
     """
     dijkstra(csgraph, directed=True, indices=None, return_predecessors=False,
@@ -409,10 +408,10 @@ def dijkstra(csgraph, directed=True, indices=None,
         The N x N array of non-negative distances representing the input graph.
     directed : bool, optional
         If True (default), then find the shortest path on a directed graph:
-        only move from point i to point j along paths csgraph[i, j] and from 
+        only move from point i to point j along paths csgraph[i, j] and from
         point j to i along paths csgraph[j, i].
         If False, then find the shortest path on an undirected graph: the
-        algorithm can progress from point i to j or j to i along either 
+        algorithm can progress from point i to j or j to i along either
         csgraph[i, j] or csgraph[j, i].
     indices : array_like or int, optional
         if specified, only compute the paths for the points at the given
@@ -431,7 +430,7 @@ def dijkstra(csgraph, directed=True, indices=None,
 
         .. versionadded:: 0.14.0
     min_only : bool, optional
-￼        If False (default), for every node in the graph, find the shortest path
+        If False (default), for every node in the graph, find the shortest path
         to every node in indices.
         If True, for every node in the graph, find the shortest path to any of
         the nodes in indices (which can be substantially faster).
@@ -446,7 +445,6 @@ def dijkstra(csgraph, directed=True, indices=None,
         gives the shortest distance from point i to point j along the graph.
         If min_only=True, dist_matrix has shape (n_nodes,) and contains the
         shortest path from each node to any of the nodes in indices.
-
     predecessors : ndarray, shape ([n_indices, ]n_nodes,)
         If min_only=False, this has shape (n_indices, n_nodes),
         otherwise it has shape (n_nodes,).
@@ -465,7 +463,7 @@ def dijkstra(csgraph, directed=True, indices=None,
         this will contain -9999.  The value at the indices passed
         will be equal to that index (i.e. the fastest way to reach
         node i, is to start on node i).
-    
+
     Notes
     -----
     As currently implemented, Dijkstra's algorithm does not work for
@@ -572,7 +570,7 @@ def dijkstra(csgraph, directed=True, indices=None,
     if directed:
         if min_only:
             _dijkstra_directed_multi(indices,
-                                     csr_data, csgraph.indices, 
+                                     csr_data, csgraph.indices,
                                      csgraph.indptr,
                                      dist_matrix, predecessor_matrix,
                                      source_matrix, limitf)
