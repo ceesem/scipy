@@ -1532,8 +1532,6 @@ cdef void decrease_val(FibonacciHeap* heap,
     #              - node is not the child or sibling of another node
     #              - node is in the heap
     node.val = newval
-    if node.parent:
-        node.source = node.parent.source
     if node.parent and (node.parent.val >= newval):
         remove(node)
         insert_node(heap, node)
